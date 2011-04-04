@@ -33,22 +33,31 @@
 	 * Section - DataTables variables
 	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 	
+	$.dataTable = {};
+	
 	/*
-	 * Variable: dataTableSettings
+	 * Variable: dataTable.settings
 	 * Purpose:  Store the settings for each dataTables instance
-	 * Scope:    jQuery.fn
+	 * Scope:    jQuery.dataTable
 	 */
-	$.fn.dataTableSettings = [];
-	var _aoSettings = $.fn.dataTableSettings; /* Short reference for fast internal lookup */
+	$.dataTable.settings = $.fn.dataTableSettings = [];
+	var _aoSettings = $.dataTable.settings; /* Short reference for fast internal lookup */
 	
 	/*
-	 * Variable: dataTableExt
+	 * Variable: dataTable.ext
 	 * Purpose:  Container for customisable parts of DataTables
-	 * Scope:    jQuery.fn
+	 * Scope:    jQuery.dataTable
 	 */
-	$.fn.dataTableExt = {};
-	var _oExt = $.fn.dataTableExt;
+	$.dataTable.ext = $.fn.dataTableExt = {};
+	var _oExt = $.dataTable.ext;
 	
+	/*
+	 * Variable: dataTable.defaults
+	 * Purpose:  Set default settings for dataTables
+	 * Scope:    jQuery.dataTable
+	 */
+	$.dataTable.defaults = {};
+		
 	
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * Section - DataTables extensible objects
@@ -830,7 +839,6 @@
 		/* int:iNextUnique - next unique number for an instance */
 		"iNextUnique": 0
 	};
-	
 	
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * Section - DataTables prototype
@@ -2606,7 +2614,7 @@
 			{
 				/* Try to map from the specified property, otherwise just leave null */
 				var column = oSettings.aoColumns[i];
-				if (column.sProperty !== null && oJson[column.sProperty])
+				if (column.sProperty !== null && typeof oJson[column.sProperty] != 'undefined' )
 				{
 					aData[i] = oJson[column.sProperty];
 				}
@@ -6485,7 +6493,7 @@
 			}
 			
 			/* Make a complete and independent copy of the settings object */
-			var oSettings = new classSettings();
+			var oSettings = $.extend({}, new classSettings(), $.dataTable.defaults);
 			_aoSettings.push( oSettings );
 			
 			var bInitHandedOff = false;
