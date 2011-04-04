@@ -26,7 +26,7 @@
  * building the dynamic multi-column sort functions.
  */
 /*jslint evil: true, undef: true, browser: true */
-/*globals $, jQuery,_fnExternApiFunc,_fnInitalise,_fnInitComplete,_fnLanguageProcess,_fnAddColumn,_fnColumnOptions,_fnAddData,_fnGatherData,_fnDrawHead,_fnDraw,_fnReDraw,_fnAjaxUpdate,_fnAjaxUpdateDraw,_fnAddOptionsHtml,_fnFeatureHtmlTable,_fnScrollDraw,_fnAjustColumnSizing,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnBuildSearchArray,_fnBuildSearchRow,_fnFilterCreateSearch,_fnDataToSearch,_fnSort,_fnSortAttachListener,_fnSortingClasses,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnFeatureHtmlLength,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnNodeToDataIndex,_fnVisbleColumns,_fnCalculateEnd,_fnConvertToWidth,_fnCalculateColumnWidths,_fnScrollingWidthAdjust,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnArrayCmp,_fnDetectType,_fnSettingsFromNode,_fnGetDataMaster,_fnGetTrNodes,_fnGetTdNodes,_fnEscapeRegex,_fnDeleteIndex,_fnReOrderIndex,_fnColumnOrdering,_fnLog,_fnClearTable,_fnSaveState,_fnLoadState,_fnCreateCookie,_fnReadCookie,_fnGetUniqueThs,_fnScrollBarWidth,_fnApplyToChildren,_fnMap*/
+/*globals $, jQuery,_fnExternApiFunc,_fnInitalise,_fnInitComplete,_fnLanguageProcess,_fnAddColumn,_fnColumnOptions,_fnJsonToDataArray,_fnAddData,_fnGatherData,_fnDrawHead,_fnDraw,_fnReDraw,_fnAjaxUpdate,_fnAjaxUpdateDraw,_fnAddOptionsHtml,_fnFeatureHtmlTable,_fnScrollDraw,_fnAjustColumnSizing,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnBuildSearchArray,_fnBuildSearchRow,_fnFilterCreateSearch,_fnDataToSearch,_fnSort,_fnSortAttachListener,_fnSortingClasses,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnFeatureHtmlLength,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnNodeToDataIndex,_fnVisbleColumns,_fnCalculateEnd,_fnConvertToWidth,_fnCalculateColumnWidths,_fnScrollingWidthAdjust,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnArrayCmp,_fnDetectType,_fnSettingsFromNode,_fnGetDataMaster,_fnGetTrNodes,_fnGetTdNodes,_fnEscapeRegex,_fnDeleteIndex,_fnReOrderIndex,_fnColumnOrdering,_fnLog,_fnClearTable,_fnSaveState,_fnLoadState,_fnCreateCookie,_fnReadCookie,_fnGetUniqueThs,_fnScrollBarWidth,_fnApplyToChildren,_fnMap*/
 
 (function($, window, document) {
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1880,6 +1880,14 @@
 			}
 			else
 			{
+				if ( !$.isArray(mData) )
+				{
+					/* JSON object - Get the array of values
+					 * We'll also extend the existing object to update any modified property values
+					 */
+					$.extend(oSettings.aoData[iRow]._aData, mData);
+					mData = _fnJsonToDataArray(oSettings, mData);
+				}
 				if ( mData.length != oSettings.aoColumns.length )
 				{
 					_fnLog( oSettings, 0, 'An array passed to fnUpdate must have the same number of '+
@@ -2356,9 +2364,10 @@
 			{
 				oSettings.fnServerData.call( oSettings.oInstance, oSettings.sAjaxSource, [], function(json) {
 					/* Got the data - add it to the table */
-					for ( i=0 ; i<json.aaData.length ; i++ )
+					var mData = json.aaData || json;
+					for ( i=0 ; i<mData.length ; i++ )
 					{
-						_fnAddData( oSettings, json.aaData[i] );
+						_fnAddData( oSettings, mData[i] );
 					}
 					
 					/* Reset the init display for cookie saving. We've already done a filter, and
@@ -2486,7 +2495,8 @@
 				"nTh": nTh ? nTh : document.createElement('th'),
 				"nTf": null,
 				"anThExtra": [],
-				"anTfExtra": []
+				"anTfExtra": [],
+				"sProperty" : null
 			};
 			
 			var iCol = oSettings.aoColumns.length-1;
@@ -2554,6 +2564,7 @@
 				_fnMap( oCol, oOptions, "iDataSort" );
 				_fnMap( oCol, oOptions, "asSorting" );
 				_fnMap( oCol, oOptions, "sSortDataType" );
+				_fnMap( oCol, oOptions, "sProperty" );
 			}
 			
 			/* Feature sorting overrides column specific when off */
@@ -2582,6 +2593,32 @@
 		}
 		
 		/*
+		 * Function: _fnJsonToDataArray
+		 * Purpose:  Maps a JSON object to a data array, based on column "sProperty" definitions.
+		 * Returns:  array: data array
+		 * Inputs:   object:oSettings - dataTables settings object
+		 *           array:oJson - JSON object to map
+		 */
+		function _fnJsonToDataArray ( oSettings, oJson )
+		{
+			var aData = [];
+			for ( var i=0 ; i<oSettings.aoColumns.length ; i++ )
+			{
+				/* Try to map from the specified property, otherwise just leave null */
+				var column = oSettings.aoColumns[i];
+				if (column.sProperty !== null && oJson[column.sProperty])
+				{
+					aData[i] = oJson[column.sProperty];
+				}
+				else
+				{
+					aData[i] = null;
+				}
+			}
+			return aData;
+		}
+		
+		/*
 		 * Function: _fnAddData
 		 * Purpose:  Add a data array to the table, creating DOM node etc
 		 * Returns:  int: - >=0 if successful (index of new aoData entry), -1 if failed
@@ -2593,19 +2630,30 @@
 		 */
 		function _fnAddData ( oSettings, aDataSupplied )
 		{
+			var aData;
+			if ( $.isArray(aDataSupplied) )
+			{
+				aData = aDataSupplied.slice();
+			}
+			else
+			{
+				/* JSON object - Get the array of values
+				 * We'll also extend the array with the object properties to allow use everywhere data is exposed (fnRender, fnGetData, etc)
+				 */
+				aData = $.extend(_fnJsonToDataArray(oSettings, aDataSupplied), aDataSupplied);
+			}
+			
 			/* Sanity check the length of the new array */
-			if ( aDataSupplied.length != oSettings.aoColumns.length &&
+			if ( aData.length != oSettings.aoColumns.length &&
 				oSettings.iDrawError != oSettings.iDraw )
 			{
-				_fnLog( oSettings, 0, "Added data (size "+aDataSupplied.length+") does not match known "+
+				_fnLog( oSettings, 0, "Added data (size "+aData.length+") does not match known "+
 					"number of columns ("+oSettings.aoColumns.length+")" );
 				oSettings.iDrawError = oSettings.iDraw;
 				return -1;
 			}
 			
-			
 			/* Create the object for storing information about this new row */
-			var aData = aDataSupplied.slice();
 			var iThisIndex = oSettings.aoData.length;
 			oSettings.aoData.push( {
 				"nTr": document.createElement('tr'),
@@ -3299,6 +3347,15 @@
 					for ( i=0 ; i<iColumns ; i++ )
 					{
 						aoData.push( { "name": "bSortable_"+i,  "value": oSettings.aoColumns[i].bSortable } );
+					}
+				}
+				
+				/* Property (only send if filtering or sorting) */
+				if ( oSettings.oFeatures.bFilter !== false || oSettings.oFeatures.bSort !== false )
+				{
+					for ( i=0 ; i<iColumns ; i++ )
+					{
+						aoData.push( { "name": "sProperty_"+i,  "value": oSettings.aoColumns[i].sProperty } );
 					}
 				}
 				
@@ -6313,6 +6370,7 @@
 		this.oApi._fnLanguageProcess = _fnLanguageProcess;
 		this.oApi._fnAddColumn = _fnAddColumn;
 		this.oApi._fnColumnOptions = _fnColumnOptions;
+		this.oApi._fnJsonToDataArray = _fnJsonToDataArray;
 		this.oApi._fnAddData = _fnAddData;
 		this.oApi._fnGatherData = _fnGatherData;
 		this.oApi._fnDrawHead = _fnDrawHead;
