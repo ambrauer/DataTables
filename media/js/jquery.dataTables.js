@@ -6493,7 +6493,7 @@
 			}
 			
 			/* Make a complete and independent copy of the settings object */
-			var oSettings = $.extend({}, new classSettings(), $.dataTable.defaults);
+			var oSettings = new classSettings();
 			_aoSettings.push( oSettings );
 			
 			var bInitHandedOff = false;
@@ -6538,7 +6538,7 @@
 			/* Store the features that we have available */
 			if ( typeof oInit != 'undefined' && oInit !== null )
 			{
-				oSettings.oInit = oInit;
+				oSettings.oInit = oInit = $.extend({}, $.dataTable.defaults, oInit);
 				_fnMap( oSettings.oFeatures, oInit, "bPaginate" );
 				_fnMap( oSettings.oFeatures, oInit, "bLengthChange" );
 				_fnMap( oSettings.oFeatures, oInit, "bFilter" );
