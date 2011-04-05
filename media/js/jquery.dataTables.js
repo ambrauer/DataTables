@@ -1630,6 +1630,7 @@
 			
 			/* Return the data array from this row */
 			var oData = oSettings.aoData.splice( iAODataIndex, 1 );
+			var aData = oData[0]._aData;
 			
 			/* Remove the target row from the search array */
 			var iDisplayIndex = $.inArray( iAODataIndex, oSettings.aiDisplay );
@@ -1642,7 +1643,7 @@
 			/* If there is a user callback function - call it */
 			if ( typeof fnCallBack == "function" )
 			{
-				fnCallBack.call( this, oSettings, oData );
+				fnCallBack.call( this, oSettings, aData );
 			}
 			
 			/* Check for an 'overflow' they case for dislaying the table */
@@ -1661,7 +1662,7 @@
 				_fnDraw( oSettings );
 			}
 			
-			return oData;
+			return aData;
 		};
 		
 		/*
