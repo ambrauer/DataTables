@@ -6542,7 +6542,7 @@
 			/* Store the features that we have available */
 			if ( typeof oInit != 'undefined' && oInit !== null )
 			{
-				oSettings.oInit = oInit = $.extend({}, $.dataTable.defaults, oInit);
+				oSettings.oInit = oInit = $.extend(true, {}, $.dataTable.defaults, oInit);
 				_fnMap( oSettings.oFeatures, oInit, "bPaginate" );
 				_fnMap( oSettings.oFeatures, oInit, "bLengthChange" );
 				_fnMap( oSettings.oFeatures, oInit, "bFilter" );
