@@ -178,6 +178,7 @@
 		"sPaging": "dataTables_paginate paging_", /* Note that the type is postfixed */
 		"sLength": "dataTables_length",
 		"sProcessing": "dataTables_processing",
+		"sProcessingTable": "",
 		
 		/* Sorting */
 		"sSortAsc": "sorting_asc",
@@ -244,6 +245,7 @@
 			"ui-buttonset-multi paging_", /* Note that the type is postfixed */
 		"sLength": "dataTables_length",
 		"sProcessing": "dataTables_processing",
+		"sProcessingTable": "ui-state-disabled",
 		
 		/* Sorting */
 		"sSortAsc": "ui-state-default",
@@ -5156,6 +5158,7 @@
 				{
 					an[i].style.visibility = bShow ? "visible" : "hidden";
 				}
+				$(oSettings.nTable).toggleClass( oSettings.oClasses.sProcessingTable , bShow );
 			}
 		}
 		
