@@ -3490,17 +3490,16 @@
 			
 			/* Loop over the user set positioning and place the elements as needed */
 			var aDom = oSettings.sDom.split('');
-			var nTmp, iPushFeature, cOption, nNewNode, cNext, sAttr, j;
+			var nTmp, iPushFeature, cOption, nNewNode, nExistingNode, cNext, sAttr, j;
 			for ( var i=0 ; i<aDom.length ; i++ )
 			{
 				iPushFeature = 0;
 				cOption = aDom[i];
+				nNewNode = null;
+				nExistingNode = null;
 				
 				if ( cOption == '<' )
 				{
-					/* New container div */
-					nNewNode = document.createElement( 'div' );
-					
 					/* Check to see if we should append an id and/or a class name to the container */
 					cNext = aDom[i+1];
 					if ( cNext == "'" || cNext == '"' )
@@ -3525,32 +3524,84 @@
 						
 						/* The attribute can be in the format of "#id.class", "#id" or "class" This logic
 						 * breaks the string into parts and applies them as needed
+						 *
+						 * Or, add a '$' to signify use of an existing container. So, "$#id.class", "$#id", or "$class".
+						 * Can also follow with a '||' to specify a backup in case the container doesn't exist. So, "$#id||class".
 						 */
-						if ( sAttr.indexOf('.') != -1 )
+						 
+						 /* First check for an existing container */
+						if ( sAttr.charAt(0) == "$" )
 						{
-							var aSplit = sAttr.split('.');
-							nNewNode.setAttribute('id', aSplit[0].substr(1, aSplit[0].length-1) );
-							nNewNode.className = aSplit[1];
+							var $node, sSelector;
+							var aParts = sAttr.split("||"); /* Split into selector and backup */
+							
+							sSelector = aParts[0].substr(1, aParts[0].length-1); /* Get the selector, stripping off the $ */
+							sAttr = aParts.length > 1 ? aParts[1] : sSelector; /* In case the container doesn't exist, use the backup if set, otherwise use the selector */
+							if ( sSelector.charAt(0) != "#" && sSelector.charAt(0) != "." )
+							{
+								/* Assume class search */
+								sSelector = "." + sSelector;
+							}
+							
+							$node = $(sSelector);
+							if ( $node.length > 0 )
+							{
+								/* Found an existing node */
+								nExistingNode = $node[0];
+							}
 						}
-						else if ( sAttr.charAt(0) == "#" )
+						
+						if ( !nExistingNode )
 						{
-							nNewNode.setAttribute('id', sAttr.substr(1, sAttr.length-1) );
-						}
-						else
-						{
-							nNewNode.className = sAttr;
+							/* New container div */
+							nNewNode = document.createElement( 'div' );
+							
+							if ( sAttr.indexOf('.') != -1 )
+							{
+								var aSplit = sAttr.split('.');
+								nNewNode.setAttribute('id', aSplit[0].substr(1, aSplit[0].length-1) );
+								nNewNode.className = aSplit[1];
+							}
+							else if ( sAttr.charAt(0) == "#" )
+							{
+								nNewNode.setAttribute('id', sAttr.substr(1, sAttr.length-1) );
+							}
+							else
+							{
+								nNewNode.className = sAttr;
+							}
 						}
 						
 						i += j; /* Move along the position array */
 					}
+					else
+					{
+						/* New container div */
+						nNewNode = document.createElement( 'div' );
+					}
 					
-					nInsertNode.appendChild( nNewNode );
-					nInsertNode = nNewNode;
+					if ( nExistingNode )
+					{
+						nInsertNode = nExistingNode;
+					}
+					else
+					{	
+						nInsertNode.appendChild( nNewNode );
+						nInsertNode = nNewNode;
+					}					
 				}
 				else if ( cOption == '>' )
 				{
 					/* End container div */
-					nInsertNode = nInsertNode.parentNode;
+					if ( nNewNode )
+					{
+						nInsertNode = nInsertNode.parentNode;
+						nNewNode = null;
+					}
+					else
+					{
+						nInsertNode = oSettings.nTableWrapper;
+					}
 				}
 				else if ( cOption == 'l' && oSettings.oFeatures.bPaginate && oSettings.oFeatures.bLengthChange )
 				{
