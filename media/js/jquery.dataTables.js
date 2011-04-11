@@ -179,6 +179,7 @@
 		"sLength": "dataTables_length",
 		"sProcessing": "dataTables_processing",
 		"sProcessingTable": "",
+		"sTable": "dataTables_table",
 		
 		/* Sorting */
 		"sSortAsc": "sorting_asc",
@@ -246,6 +247,7 @@
 		"sLength": "dataTables_length",
 		"sProcessing": "dataTables_processing",
 		"sProcessingTable": "ui-state-disabled",
+		"sTable": "dataTables_table",
 		
 		/* Sorting */
 		"sSortAsc": "ui-state-default",
@@ -3633,6 +3635,8 @@
 		 */
 		function _fnFeatureHtmlTable ( oSettings )
 		{
+			$(oSettings.nTable).addClass(oSettings.oClasses.sTable);
+			
 			/* Chack if scrolling is enabled or not - if not then leave the DOM unaltered */
 			if ( oSettings.oScroll.sX === "" && oSettings.oScroll.sY === "" )
 			{
