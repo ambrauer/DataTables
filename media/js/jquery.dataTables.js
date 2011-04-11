@@ -6543,10 +6543,23 @@
 			/* State the table's width for if a destroy is called at a later time */
 			oSettings.sDestroyWidth = $(this).width();
 			
+			/* Apply any defaults */
+			if ( !$.isEmptyObject($.dataTable.defaults) )
+			{
+				if ( typeof oInit != 'undefined' && oInit !== null )
+				{
+					oInit = $.extend(true, {}, $.dataTable.defaults, oInit);
+				}
+				else
+				{
+					oInit = $.dataTable.defaults;
+				}
+			}
+			
 			/* Store the features that we have available */
 			if ( typeof oInit != 'undefined' && oInit !== null )
 			{
-				oSettings.oInit = oInit = $.extend(true, {}, $.dataTable.defaults, oInit);
+				oSettings.oInit = oInit;
 				_fnMap( oSettings.oFeatures, oInit, "bPaginate" );
 				_fnMap( oSettings.oFeatures, oInit, "bLengthChange" );
 				_fnMap( oSettings.oFeatures, oInit, "bFilter" );
