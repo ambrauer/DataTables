@@ -26,7 +26,7 @@
  * building the dynamic multi-column sort functions.
  */
 /*jslint evil: true, undef: true, browser: true */
-/*globals $, jQuery,_fnExternApiFunc,_fnInitalise,_fnInitComplete,_fnLanguageProcess,_fnAddColumn,_fnColumnOptions,_fnJsonToDataArray,_fnAddData,_fnGatherData,_fnDrawHead,_fnDraw,_fnReDraw,_fnAjaxUpdate,_fnAjaxUpdateDraw,_fnAddOptionsHtml,_fnFeatureHtmlTable,_fnScrollDraw,_fnAjustColumnSizing,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnBuildSearchArray,_fnBuildSearchRow,_fnFilterCreateSearch,_fnDataToSearch,_fnSort,_fnSortAttachListener,_fnSortingClasses,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnFeatureHtmlLength,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnNodeToDataIndex,_fnVisbleColumns,_fnCalculateEnd,_fnConvertToWidth,_fnCalculateColumnWidths,_fnScrollingWidthAdjust,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnArrayCmp,_fnDetectType,_fnSettingsFromNode,_fnGetDataMaster,_fnGetTrNodes,_fnGetTdNodes,_fnEscapeRegex,_fnDeleteIndex,_fnReOrderIndex,_fnColumnOrdering,_fnLog,_fnClearTable,_fnSaveState,_fnLoadState,_fnCreateCookie,_fnReadCookie,_fnGetUniqueThs,_fnScrollBarWidth,_fnApplyToChildren,_fnMap*/
+/*globals $, jQuery,_fnExternApiFunc,_fnInitalise,_fnInitComplete,_fnLanguageProcess,_fnAddColumn,_fnColumnOptions,_fnJsonToDataArray,_fnAddData,_fnGatherData,_fnDrawHead,_fnDraw,_fnReDraw,_fnAjaxUpdate,_fnAjaxUpdateDraw,_fnAddOptionsHtml,_fnFeatureHtmlTable,_fnScrollDraw,_fnAjustColumnSizing,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnBuildSearchArray,_fnBuildSearchRow,_fnFilterCreateSearch,_fnDataToSearch,_fnSort,_fnSortAttachListener,_fnSortingClasses,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnFeatureHtmlLength,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnNodeToDataIndex,_fnVisbleColumns,_fnCalculateEnd,_fnConvertToWidth,_fnCalculateColumnWidths,_fnScrollingWidthAdjust,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnArrayCmp,_fnDetectType,_fnSettingsFromNode,_fnGetDataMaster,_fnGetTrNodes,_fnGetTdNodes,_fnEscapeRegex,_fnDeleteIndex,_fnReOrderIndex,_fnColumnOrdering,_fnLog,_fnClearTable,_fnSaveState,_fnLoadState,_fnCreateCookie,_fnReadCookie,_fnGetUniqueThs,_fnScrollBarWidth,_fnApplyToChildren,_fnMap,_fnDrawStaticColumns,_fnVisibleToStaticColumnIndex*/
 
 (function($, window, document) {
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1021,6 +1021,19 @@
 			this.aoColumns = [];
 			
 			/*
+			 * Variable: aoStaticColumns
+			 * Purpose:  Store information about static columns. These always appear either to the far left or far right.
+			 * Scope:    jQuery.dataTable.classSettings 
+			 * Notes:    Each array element is an object with the following parameters:
+			 *   function:fnHead - function to call to generate the (th) element to be placed in the thead>tr.
+			 *   function:fnBody - function to call to generate the (td) element to be placed in the tbody>tr.
+			 *   function:fnFoot - function to call to generate the (th) element to be placed in the tfoot>tr.
+			 *   string:sPosition - position of the fixed column - either "left" or "right". Default is "left".
+			 *   string:sWidth - width of the column
+			 */
+			this.aoStaticColumns = [];
+			
+			/*
 			 * Variable: iNextId
 			 * Purpose:  Store the next unique id to be used for a new row
 			 * Scope:    jQuery.dataTable.classSettings 
@@ -1691,7 +1704,7 @@
 				_fnDraw( oSettings );
 			}
 			
-			return aData;
+			return oData[0]._aData;
 		};
 		
 		/*
@@ -2030,6 +2043,14 @@
 						iInsert++;
 					}
 				}
+				/* Adjust for any left-positioned static columns */
+				for (var i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+				{
+					if ( typeof oSettings.aoStaticColumns[i].sPosition == 'undefined' || oSettings.aoStaticColumns[i].sPosition == 'left' )
+					{
+						iInsert++;
+					}
+				}
 				
 				/* Need to decide if we should use appendChild or insertBefore */
 				if ( iInsert >= _fnVisbleColumns( oSettings ) )
@@ -2089,7 +2110,6 @@
 						}	
 					}
 					
-					anTds = _fnGetTdNodes( oSettings );
 					for ( i=0, iLen=oSettings.aoData.length ; i<iLen ; i++ )
 					{
 						nTd = oSettings.aoData[i]._anHidden[iCol];
@@ -2365,6 +2385,9 @@
 			/* Draw the headers for the table */
 			_fnDrawHead( oSettings );
 			
+			/* Draw any static columns */
+			_fnDrawStaticColumns( oSettings );
+			
 			/* Okay to show that something is going on now */
 			_fnProcessingDisplay( oSettings, true );
 			
@@ -2470,23 +2493,7 @@
 		 */
 		function _fnLanguageProcess( oSettings, oLanguage, bInit )
 		{
-			_fnMap( oSettings.oLanguage, oLanguage, 'sProcessing' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sLengthMenu' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sEmptyTable' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sZeroRecords' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sInfo' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sInfoEmpty' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sInfoFiltered' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sInfoPostFix' );
-			_fnMap( oSettings.oLanguage, oLanguage, 'sSearch' );
-			
-			if ( typeof oLanguage.oPaginate != 'undefined' )
-			{
-				_fnMap( oSettings.oLanguage.oPaginate, oLanguage.oPaginate, 'sFirst' );
-				_fnMap( oSettings.oLanguage.oPaginate, oLanguage.oPaginate, 'sPrevious' );
-				_fnMap( oSettings.oLanguage.oPaginate, oLanguage.oPaginate, 'sNext' );
-				_fnMap( oSettings.oLanguage.oPaginate, oLanguage.oPaginate, 'sLast' );
-			}
+			$.extend(true, oSettings.oLanguage, oLanguage);
 			
 			/* Backwards compatibility - if there is no sEmptyTable given, then use the same as
 			 * sZeroRecords - assuming that is given.
@@ -2775,6 +2782,10 @@
 			
 			/* Add to the display array */
 			oSettings.aiDisplayMaster.push( iThisIndex );
+			
+			/* Draw any static columns */
+			_fnDrawStaticColumns( oSettings, iThisIndex );
+			
 			return iThisIndex;
 		}
 		
@@ -3093,6 +3104,66 @@
 							nTfs[i-iCorrector].parentNode.removeChild( nTfs[i-iCorrector] );
 							iCorrector++;
 						}
+					}
+				}
+			}
+		}
+		
+		/*
+		 * Function: _fnDrawStaticColumns
+		 * Purpose:  Insert required nodes for any static columns defined
+		 * Returns:  -
+		 * Inputs:   object:oSettings - dataTables settings object
+		 *           int:iRow - optional - if present then only static columns for the row with the index 'iRow'
+		 */
+		function _fnDrawStaticColumns( oSettings, iRow )
+		{
+			var i, j, nTd, nTh, nTrs = [];
+			
+			if ( typeof iRow != 'undefined' )
+			{
+				/* Single row (No header/footer) */
+				nTrs[0] = oSettings.aoData[iRow].nTr;
+			}
+			else
+			{
+				/* Header/footer */
+				for ( i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+				{
+					nTh = oSettings.aoStaticColumns[i].fnHead();
+					if ( oSettings.aoStaticColumns[i].sWidth !== null )
+					{
+						nTh.style.width = _fnStringToCss( oSettings.aoStaticColumns[i].sWidth );
+					}
+					if ( typeof oSettings.aoStaticColumns[i].sPosition == 'undefined' || oSettings.aoStaticColumns[i].sPosition == 'left' )
+					{
+						$('>tr', oSettings.nTHead).prepend(nTh);
+						$('>tr', oSettings.nTFoot).prepend(oSettings.aoStaticColumns[i].fnFoot());
+					}
+					else
+					{
+						$('>tr', oSettings.nTHead).append(nTh);
+						$('>tr', oSettings.nTFoot).append(oSettings.aoStaticColumns[i].fnFoot());
+					}
+				}
+				/* All rows */
+				nTrs = _fnGetTrNodes( oSettings );
+			}
+			
+			/* Loop through the rows and set */
+			for ( i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+			{
+				nTd = oSettings.aoStaticColumns[i].fnBody(); // All rows use the same node
+				
+				for ( j=0 ; j<nTrs.length ; j++ )
+				{
+					if ( typeof oSettings.aoStaticColumns[i].sPosition == 'undefined' || oSettings.aoStaticColumns[i].sPosition == 'left' )
+					{
+						nTrs[j].insertBefore( nTd.cloneNode(true), nTrs[j].childNodes[0] );
+					}
+					else
+					{
+						nTrs[j].appendChild( nTd.cloneNode(true) );
 					}
 				}
 			}
@@ -3711,7 +3782,7 @@
 		 */
 		function _fnFeatureHtmlTable ( oSettings )
 		{
-			$(oSettings.nTable).addClass(oSettings.oClasses.sTable);
+			oSettings.nTable.className = oSettings.oClasses.sTable;
 			
 			/* Chack if scrolling is enabled or not - if not then leave the DOM unaltered */
 			if ( oSettings.oScroll.sX === "" && oSettings.oScroll.sY === "" )
@@ -3930,7 +4001,18 @@
 			for ( i=0, iLen=nThs.length ; i<iLen ; i++ )
 			{
 				iVis = _fnVisibleToColumnIndex( o, i );
-				nThs[i].style.width = o.aoColumns[iVis].sWidth;
+				if ( iVis !== null )
+				{
+					nThs[i].style.width = o.aoColumns[iVis].sWidth;
+				}
+				else
+				{
+					iVis = _fnVisibleToStaticColumnIndex( o, i );
+					if ( iVis !== null && o.aoStaticColumns[iVis].sWidth !== null )
+					{
+						nThs[i].style.width = o.aoStaticColumns[iVis].sWidth;
+					}
+				}
 			}
 			
 			if ( o.nTFoot !== null )
@@ -5256,11 +5338,69 @@
 		 */
 		function _fnVisibleToColumnIndex( oSettings, iMatch )
 		{
-			var iColumn = -1;
+			var i, iColumn = -1;
 			
-			for ( var i=0 ; i<oSettings.aoColumns.length ; i++ )
+			/* Adjust for any left-positioned static columns */
+			for ( i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+			{
+				if ( typeof oSettings.aoStaticColumns[i].sPosition == 'undefined' || oSettings.aoStaticColumns[i].sPosition == 'left' )
+				{
+					iColumn++;
+				}
+			}
+			
+			for ( i=0 ; i<oSettings.aoColumns.length ; i++ )
 			{
 				if ( oSettings.aoColumns[i].bVisible === true )
+				{
+					iColumn++;
+				}
+				
+				if ( iColumn == iMatch )
+				{
+					return i;
+				}
+			}
+			
+			return null;
+		}
+		
+		/*
+		 * Function: _fnVisibleToStaticColumnIndex
+		 * Purpose:  Covert the index of a visible column to the index in the array of static columns
+		 * Returns:  int:i - the index
+		 * Inputs:   object:oSettings - dataTables settings object
+		 */
+		function _fnVisibleToStaticColumnIndex( oSettings, iMatch )
+		{
+			var i, iColumn = -1;
+			
+			/* Check left-positioned static columns */
+			for ( i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+			{
+				if ( typeof oSettings.aoStaticColumns[i].sPosition == 'undefined' || oSettings.aoStaticColumns[i].sPosition == 'left' )
+				{
+					iColumn++;
+				}
+				
+				if ( iColumn == iMatch )
+				{
+					return i;
+				}
+			}
+			
+			for ( i=0 ; i<oSettings.aoColumns.length ; i++ )
+			{
+				if ( oSettings.aoColumns[i].bVisible === true )
+				{
+					iColumn++;
+				}
+			}
+			
+			/* Check right-positioned static columns */
+			for ( i=0 ; i<oSettings.aoStaticColumns.length ; i++ )
+			{
+				if ( typeof oSettings.aoStaticColumns[i].sPosition == 'right' )
 				{
 					iColumn++;
 				}
@@ -5293,7 +5433,22 @@
 				
 				if ( i == iMatch )
 				{
-					return oSettings.aoColumns[i].bVisible === true ? iVisible : null;
+					if ( oSettings.aoColumns[i].bVisible === true )
+					{	
+						/* Adjust for any left-positioned static columns */
+						for (var j=0 ; j<oSettings.aoStaticColumns.length ; j++ )
+						{
+							if ( typeof oSettings.aoStaticColumns[j].sPosition == 'undefined' || oSettings.aoStaticColumns[j].sPosition == 'left' )
+							{
+								iVisible++;
+							}
+						}
+						return iVisible;
+					}
+					else
+					{
+						return null;
+					}
 				}
 			}
 			
@@ -5350,6 +5505,10 @@
 					iVis++;
 				}
 			}
+			
+			/* Adjust for any static columns */
+			iVis += oS.aoStaticColumns.length;
+			
 			return iVis;
 		}
 		
@@ -5853,7 +6012,7 @@
 					}
 				}
 				
-				iCorrector = 0;
+				iCorrector = oSettings.aoStaticColumns.length * -1;
 				for ( iColumn=0, iColumns=oSettings.aoColumns.length ; iColumn<iColumns ; iColumn++ )
 				{
 					if ( oSettings.aoColumns[iColumn].bVisible )
@@ -6472,6 +6631,7 @@
 		this.oApi._fnAddData = _fnAddData;
 		this.oApi._fnGatherData = _fnGatherData;
 		this.oApi._fnDrawHead = _fnDrawHead;
+		this.oApi._fnDrawStaticColumns = _fnDrawStaticColumns;
 		this.oApi._fnDraw = _fnDraw;
 		this.oApi._fnReDraw = _fnReDraw;
 		this.oApi._fnAjaxUpdate = _fnAjaxUpdate;
@@ -6500,6 +6660,7 @@
 		this.oApi._fnFeatureHtmlProcessing = _fnFeatureHtmlProcessing;
 		this.oApi._fnProcessingDisplay = _fnProcessingDisplay;
 		this.oApi._fnVisibleToColumnIndex = _fnVisibleToColumnIndex;
+		this.oApi._fnVisibleToStaticColumnIndex = _fnVisibleToStaticColumnIndex;
 		this.oApi._fnColumnIndexToVisible = _fnColumnIndexToVisible;
 		this.oApi._fnNodeToDataIndex = _fnNodeToDataIndex;
 		this.oApi._fnVisbleColumns = _fnVisbleColumns;
