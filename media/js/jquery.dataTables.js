@@ -1123,6 +1123,26 @@
 			this.aoDrawCallback = [];
 			
 			/*
+			 * Variable: aoDeleteCallback
+			 * Purpose:  Array of callback functions for delete callback functions
+			 * Scope:    jQuery.dataTable.classSettings
+			 * Notes:    Each array element is an object with the following parameters:
+			 *   function:fn - function to call
+			 *   string:sName - name callback (feature). useful for arranging array
+			 */
+			this.aoDeleteCallback = [];
+			
+			/*
+			 * Variable: aoClearCallback
+			 * Purpose:  Array of callback functions for clear table callback functions
+			 * Scope:    jQuery.dataTable.classSettings
+			 * Notes:    Each array element is an object with the following parameters:
+			 *   function:fn - function to call
+			 *   string:sName - name callback (feature). useful for arranging array
+			 */
+			this.aoClearCallback = [];
+			
+			/*
 			 * Variable: fnInitComplete
 			 * Purpose:  Callback function for when the table has been initalised
 			 * Scope:    jQuery.dataTable.classSettings
@@ -1634,7 +1654,6 @@
 			
 			/* Return the data array from this row */
 			var oData = oSettings.aoData.splice( iAODataIndex, 1 );
-			var aData = oData[0]._aData;
 			
 			/* Remove the target row from the search array */
 			var iDisplayIndex = $.inArray( iAODataIndex, oSettings.aiDisplay );
@@ -1644,10 +1663,16 @@
 			_fnDeleteIndex( oSettings.aiDisplayMaster, iAODataIndex );
 			_fnDeleteIndex( oSettings.aiDisplay, iAODataIndex );
 			
+			/* Call all required callback functions */
+			for ( i=oSettings.aoDeleteCallback.length-1 ; i>=0 ; i-- )
+			{
+				oSettings.aoDeleteCallback[i].fn.call( oSettings.oInstance, oSettings, oData[0]._aData, oData[0].nTr );
+			}
+			
 			/* If there is a user callback function - call it */
 			if ( typeof fnCallBack == "function" )
 			{
-				fnCallBack.call( this, oSettings, aData );
+				fnCallBack.call( this, oSettings, oData[0]._aData, oData[0].nTr );
 			}
 			
 			/* Check for an 'overflow' they case for dislaying the table */
@@ -5977,6 +6002,12 @@
 			oSettings.aiDisplayMaster.splice( 0, oSettings.aiDisplayMaster.length );
 			oSettings.aiDisplay.splice( 0, oSettings.aiDisplay.length );
 			_fnCalculateEnd( oSettings );
+			
+			/* Call all required callback functions */
+			for ( i=oSettings.aoClearCallback.length-1 ; i>=0 ; i-- )
+			{
+				oSettings.aoClearCallback[i].fn.call( oSettings.oInstance, oSettings );
+			}
 		}
 		
 		/*
