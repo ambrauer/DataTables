@@ -2157,15 +2157,18 @@
 				oSettings.aoOpenRows[i].nTr.colSpan = _fnVisbleColumns( oSettings );
 			}
 			
-			/* Do a redraw incase anything depending on the table columns needs it 
-			 * (built-in: scrolling) 
-			 */
+			/* Adjust the columns (this is the same logic that's in fnAdjustColumnSizing) */
+			_fnAjustColumnSizing( oSettings );
 			if ( typeof bRedraw == 'undefined' || bRedraw )
 			{
-				_fnAjustColumnSizing( oSettings );
-				_fnDraw( oSettings );
+				_fnDraw( oSettings, oSettings.oFeatures.bServerSide );
 			}
-			
+			else if ( oSettings.oScroll.sX !== "" || oSettings.oScroll.sY !== "" )
+			{
+				/* If not redrawing, but scrolling, we want to apply the new column sizes anyway */
+				_fnScrollDraw( oSettings );
+			}
+
 			_fnSaveState( oSettings );
 		};
 		
@@ -3175,7 +3178,7 @@
 		 * Returns:  -
 		 * Inputs:   object:oSettings - dataTables settings object
 		 */
-		function _fnDraw( oSettings )
+		function _fnDraw( oSettings, bNoAjax )
 		{
 			var i, iLen;
 			var anRows = [];
@@ -3203,7 +3206,7 @@
 			}
 			
 			/* If we are dealing with Ajax - do it here */
-			if ( !oSettings.bDestroying && oSettings.oFeatures.bServerSide && 
+			if ( !oSettings.bDestroying && oSettings.oFeatures.bServerSide && ( typeof bNoAjax == 'undefined' || bNoAjax == false ) &&
 			     !_fnAjaxUpdate( oSettings ) )
 			{
 				return;
