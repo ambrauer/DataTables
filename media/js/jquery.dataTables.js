@@ -549,6 +549,11 @@
 				var an = oSettings.aanFeatures.p;
 				var anButtons, anStatic, nPaginateList;
 				var fnClick = function() {
+					/* If the user-defined predraw callback returns false, don't do anything */
+					if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'page' ) === false )
+					{
+						return;
+					}
 					/* Use the information in the element to jump to the required page */
 					var iTarget = (this.innerHTML * 1) - 1;
 					oSettings._iDisplayStart = iTarget * oSettings._iDisplayLength;
@@ -4297,6 +4302,12 @@
 		 */
 		function _fnFilterComplete ( oSettings, oInput, iForce )
 		{
+			/* If the user-defined predraw callback returns false, don't do anything */
+			if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'filter' ) === false )
+			{
+				return;
+			}
+			
 			/* Filter on everything */
 			_fnFilter( oSettings, oInput.sSearch, iForce, oInput.bRegex, oInput.bSmart );
 			
@@ -4724,6 +4735,12 @@
 					return;
 				}
 				
+				/* If the user-defined predraw callback returns false, don't do anything */
+				if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'sort' ) === false )
+				{
+					return;
+				}
+				
 				/*
 				 * This is a little bit odd I admit... I declare a temporary function inside the scope of
 				 * _fnDrawHead and the click handler in order that the code presented here can be used 
@@ -5027,6 +5044,12 @@
 		 */
 		function _fnPageChange ( oSettings, sAction )
 		{
+			/* If the user-defined predraw callback returns false, don't do anything */
+			if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'page' ) === false )
+			{
+				return;
+			}
+			
 			var iOldStart = oSettings._iDisplayStart;
 			
 			if ( sAction == "first" )
@@ -5247,6 +5270,14 @@
 			$('select option[value="'+oSettings._iDisplayLength+'"]',nLength).attr("selected",true);
 			
 			$('select', nLength).bind( 'change.DT', function(e) {
+				
+				/* If the user-defined predraw callback returns false, don't do anything */
+				if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'length' ) === false )
+				{
+					$(this).val( oSettings._iDisplayLength );
+				    return;
+				}
+				
 				var iVal = $(this).val();
 				
 				/* Update all other length options for the new display */
