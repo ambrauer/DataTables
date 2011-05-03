@@ -3091,6 +3091,11 @@
 							oSettings.aoColumns[i].nTf.className += " "+oSettings.oClasses.sFooterTH;
 						}
 						
+						if ( oSettings.aoColumns[i].sClass !== null )
+						{
+							$(oSettings.aoColumns[i].nTf).addClass( oSettings.aoColumns[i].sClass );
+						}
+						
 						/* Deal with any extra elements for this column from the footer */
 						for ( j=1, jLen=anTr.length ; j<jLen ; j++ )
 						{
