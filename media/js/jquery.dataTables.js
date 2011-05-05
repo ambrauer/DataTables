@@ -2187,12 +2187,14 @@
 		this.fnPageChange = function ( sAction, bRedraw )
 		{
 			var oSettings = _fnSettingsFromNode( this[_oExt.iApiIndex] );
-			_fnPageChange( oSettings, sAction );
-			_fnCalculateEnd( oSettings );
-			
-			if ( typeof bRedraw == 'undefined' || bRedraw )
+			if ( _fnPageChange( oSettings, sAction ) )
 			{
-				_fnDraw( oSettings );
+				_fnCalculateEnd( oSettings );
+				
+				if ( typeof bRedraw == 'undefined' || bRedraw )
+				{
+					_fnDraw( oSettings );
+				}
 			}
 		};
 		
@@ -3936,9 +3938,11 @@
 							/* Only do the redraw if we have to - we might be at the end of the data */
 							if ( oSettings.fnDisplayEnd() < oSettings.fnRecordsDisplay() )
 							{
-								_fnPageChange( oSettings, 'next' );
-								_fnCalculateEnd( oSettings );
-								_fnDraw( oSettings );
+								if ( _fnPageChange( oSettings, 'next' ) )
+								{
+									_fnCalculateEnd( oSettings );
+									_fnDraw( oSettings );
+								}
 							}
 						}
 					}
