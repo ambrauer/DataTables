@@ -1445,6 +1445,13 @@
 			this.bSorted = false;
 			
 			/*
+			 * Variable: bScrolling
+			 * Purpose:  Indicate whether we are in the middle of an infinite scroll
+			 * Scope:    jQuery.dataTable.classSettings
+			 */
+			this.bScrolling = false;
+			
+			/*
 			 * Variable: oInit
 			 * Purpose:  Initialisation object that is used for the table
 			 * Scope:    jQuery.dataTable.classSettings
@@ -3341,11 +3348,10 @@
 				nBodyPar = oSettings.nTBody.parentNode;
 				nRemoveFrag.appendChild( oSettings.nTBody );
 				
-				/* When doing infinite scrolling, only remove child rows when sorting, filtering or start
-				 * up. When not infinite scroll, always do it.
+				/* When doing infinite scrolling, only remove child rows when not scrolling 
+				 * (sorting, filtering, adding, deleting) or start up. When not infinite scroll, always do it.
 				 */
-				if ( !oSettings.oScroll.bInfinite || !oSettings._bInitComplete ||
-				 	oSettings.bSorted || oSettings.bFiltered )
+				if ( !oSettings.oScroll.bInfinite || !oSettings._bInitComplete || !oSettings.bScrolling )
 				{
 					nTrs = oSettings.nTBody.childNodes;
 					for ( i=nTrs.length-1 ; i>=0 ; i-- )
@@ -3377,6 +3383,7 @@
 			oSettings.bSorted = false;
 			oSettings.bFiltered = false;
 			oSettings.bDrawing = false;
+			oSettings.bScrolling = false;
 			
 			if ( oSettings.oFeatures.bServerSide )
 			{
@@ -3427,6 +3434,12 @@
 				var iColumns = oSettings.aoColumns.length;
 				var aoData = [];
 				var i;
+				
+				/* If infinite, but this call is not due to scrolling, then reset to 0 */
+				if ( oSettings.oScroll.bInfinite && !oSettings.bScrolling )
+				{
+					oSettings._iDisplayStart = 0;
+				}
 				
 				/* Paging and general */
 				oSettings.iDraw++;
@@ -3524,7 +3537,7 @@
 			}
 			
 			if ( !oSettings.oScroll.bInfinite ||
-				   (oSettings.oScroll.bInfinite && (oSettings.bSorted || oSettings.bFiltered)) )
+				   (oSettings.oScroll.bInfinite && !oSettings.bScrolling) )
 			{
 				_fnClearTable( oSettings );
 			}
@@ -3940,6 +3953,8 @@
 							{
 								if ( _fnPageChange( oSettings, 'next' ) )
 								{
+									oSettings.bScrolling = true;
+									
 									_fnCalculateEnd( oSettings );
 									_fnDraw( oSettings );
 								}
