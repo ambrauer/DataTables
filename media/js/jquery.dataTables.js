@@ -3536,8 +3536,7 @@
 				}
 			}
 			
-			if ( !oSettings.oScroll.bInfinite ||
-				   (oSettings.oScroll.bInfinite && !oSettings.bScrolling) )
+			if ( !oSettings.oScroll.bInfinite || (oSettings.oScroll.bInfinite && !oSettings.bScrolling) )
 			{
 				_fnClearTable( oSettings );
 			}
@@ -3951,13 +3950,10 @@
 							/* Only do the redraw if we have to - we might be at the end of the data */
 							if ( oSettings.fnDisplayEnd() < oSettings.fnRecordsDisplay() )
 							{
-								if ( _fnPageChange( oSettings, 'next' ) )
-								{
-									oSettings.bScrolling = true;
-									
-									_fnCalculateEnd( oSettings );
-									_fnDraw( oSettings );
-								}
+								oSettings.bScrolling = true;
+								_fnPageChange( oSettings, 'next' )
+								_fnCalculateEnd( oSettings );
+								_fnDraw( oSettings );
 							}
 						}
 					}
@@ -5063,10 +5059,13 @@
 		 */
 		function _fnPageChange ( oSettings, sAction )
 		{
-			/* If the user-defined predraw callback returns false, don't do anything */
-			if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'page' ) === false )
+			if ( !oSettings.oScroll.bInfinite || (oSettings.oScroll.bInfinite && !oSettings.bScrolling) )
 			{
-				return;
+				/* If the user-defined predraw callback returns false, don't do anything */
+				if ( typeof oSettings.fnPreDrawCallback == 'function' && oSettings.fnPreDrawCallback.call( oSettings.oInstance, 'page' ) === false )
+				{
+					return;
+				}
 			}
 			
 			var iOldStart = oSettings._iDisplayStart;
